@@ -1,0 +1,11 @@
+Hello! Goodbye!
+Goodbye! Hello!
+
+Numbers: 14 22 19 5 1 88
+
+A-Z a-z
+{
+
+
+
+}

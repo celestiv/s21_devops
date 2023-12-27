@@ -1,0 +1,55 @@
+stages:
+  - build
+  - style
+  - tests
+  - deploy
+
+build:
+  tags:
+    - cicd
+  stage: build
+  script:
+    - make -C ./src/cat/ s21_cat
+    - make -C ./src/grep s21_grep
+  artifacts:
+    paths:
+      - ./src/cat/s21_cat
+      - ./src/grep/s21_grep
+    expire_in: 30 days
+  after_script:
+    - bash src/notify.sh
+
+style:
+  tags:
+    - cicd
+  stage: style
+  when: on_success
+  script:
+    - cd src
+    - clang-format -Werror -style=Google -n */*.c */*.h
+  after_script:
+    - bash src/notify.sh
+
+
+test:
+  tags:
+    - cicd
+  stage: tests
+  when: on_success
+  script:
+    - cd src/cat
+    - bash test_cat.sh
+    - cd ../grep
+    - bash test_grep.sh
+  after_script:
+    - bash src/notify.sh
+
+deploy:
+  tags:
+    - cicd
+  stage: deploy
+  when: manual
+  script:
+    - bash src/deploy.sh
+  after_script:
+    - bash src/notify.sh
