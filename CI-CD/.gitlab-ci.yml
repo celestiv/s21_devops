@@ -17,7 +17,7 @@ build:
       - ./src/grep/s21_grep
     expire_in: 30 days
   after_script:
-    - bash src/notify.sh
+    - bash src/notify.sh "build"
 
 style:
   tags:
@@ -28,7 +28,7 @@ style:
     - cd src
     - clang-format -Werror -style=Google -n */*.c */*.h
   after_script:
-    - bash src/notify.sh
+    - bash src/notify.sh "style"
 
 
 test:
@@ -42,7 +42,7 @@ test:
     - cd ../grep
     - bash test_grep.sh
   after_script:
-    - bash src/notify.sh
+    - bash src/notify.sh "test"
 
 deploy:
   tags:
@@ -52,4 +52,4 @@ deploy:
   script:
     - bash src/deploy.sh
   after_script:
-    - bash src/notify.sh
+    - bash src/notify.sh "deploy"

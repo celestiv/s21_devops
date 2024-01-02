@@ -58,13 +58,6 @@ done
 
 echo -e  "\nSUCCESS:$success_count\nFAIL:$fail_count\n"
 
-if (($fail_count > 0))
-then
-	echo -e $fail_tests
-fi
-
-if [[ $fail_count -eq 0 ]] ; then
-	exit 0
-else
+if ! [[ $fail_count -eq 0 ]] ; then
 	exit 1
 fi
