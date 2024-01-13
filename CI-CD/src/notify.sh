@@ -1,7 +1,6 @@
 #!/bin/bash
 
-TELEGRAM_BOT_TOKEN="6845842379:AAGr-N2q6kCY0nlvGn58qiU0oeY3fI9Mtqk"
-TELEGRAM_USER_ID="770759263"
+source config.sh
 
 if [[ $CI_JOB_STATUS == 'success' ]] ; then
     CI_JOB_STATUS="SUCCESS✅"
