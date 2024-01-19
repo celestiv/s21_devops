@@ -23,3 +23,5 @@ else
   echo -e "${FONT_RED}2 - Очистка по дате создания файла${DEF}"
   echo -e "${FONT_RED}3 - Очистка по маске имени. Например: bash main.sh ab${DEF}"
 fi
+
+rm -rf ../log/
