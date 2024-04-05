@@ -1,194 +1,102 @@
-version: "3.9"
+---
+version: "3.7"
 services:
   postgres:
-    build: "services/database"
-    container_name: ${POSTGRES_HOST}
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: ${PGDATA}/pgdata
+    image: postgres:alpine3.19
+    env_file:
+      - ./services/database/database.env
     volumes:
+      - ./services/database/:/docker-entrypoint-initdb.d
       - devops7-data:/var/lib/postgresql/data
-    ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d postgres
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: always
+    # restart: always
     networks:
       - postgres_net
-
+  
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: ${RABBIT_MQ_HOST}
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 10s
       timeout: 10s
       retries: 3
-    ports:
-      - "${RABBIT_MQ_PORT}:${RABBIT_MQ_PORT}"
     networks:
       - postgres_net
-
+  
   booking:
-    build: "services/booking-service"
-    container_name: ${BOOKING_SERVICE_HOST}
-    command: ./wait-for-it.sh -h ${POSTGRES_HOST} -p ${POSTGRES_PORT}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "reservations_db"
-      RABBIT_MQ_HOST: ${RABBIT_MQ_HOST}
-      RABBIT_MQ_PORT: ${RABBIT_MQ_PORT}
-      RABBIT_MQ_USER: "guest"
-      RABBIT_MQ_PASSWORD: "guest"
-      RABBIT_MQ_QUEUE_NAME: "messagequeue"
-      RABBIT_MQ_EXCHANGE: "messagequeue-exchange"
-      HOTEL_SERVICE_HOST: ${HOTEL_SERVICE_HOST}
-      HOTEL_SERVICE_PORT: ${HOTEL_SERVICE_PORT}
-      PAYMENT_SERVICE_HOST: ${PAYMENT_SERVICE_HOST}
-      PAYMENT_SERVICE_PORT: ${PAYMENT_SERVICE_PORT}
-      LOYALTY_SERVICE_HOST: ${LOYALTY_SERVICE_HOST}
-      LOYALTY_SERVICE_PORT: ${LOYALTY_SERVICE_PORT}
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
-      
+    image: celestiv/booking_service:1.2
+    env_file:
+      - ./services/booking-service/booking.env
     networks:
       - postgres_net
-
+  
   gateway:
-    build: "services/gateway-service"
-    container_name: ${GATEWAY_HOST}
-    ports:
-      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-    environment:
-      SESSION_SERVICE_HOST: ${SESSION_SERVICE_HOST}
-      SESSION_SERVICE_PORT: ${SESSION_SERVICE_PORT}
-      HOTEL_SERVICE_HOST: ${HOTEL_SERVICE_HOST}
-      HOTEL_SERVICE_PORT: ${HOTEL_SERVICE_PORT}
-      BOOKING_SERVICE_HOST: ${BOOKING_SERVICE_HOST}
-      BOOKING_SERVICE_PORT: ${BOOKING_SERVICE_PORT}
-      PAYMENT_SERVICE_HOST: ${PAYMENT_SERVICE_HOST}
-      PAYMENT_SERVICE_PORT: ${PAYMENT_SERVICE_PORT}
-      LOYALTY_SERVICE_HOST: ${LOYALTY_SERVICE_HOST}
-      LOYALTY_SERVICE_PORT: ${LOYALTY_SERVICE_PORT}
-      REPORT_SERVICE_HOST: ${REPORT_SERVICE_HOST}
-      REPORT_SERVICE_PORT: ${REPORT_SERVICE_PORT}
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+    image: celestiv/gateway_service:1.2
+    env_file:
+      - ./services/gateway-service/gateway.env
     networks:
       - postgres_net
-
+  
   hotel:
-    build: "services/hotel-service"
-    container_name: ${HOTEL_SERVICE_HOST}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "hotels_db"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
-      
+    image: celestiv/hotel_service:1.2
+    env_file:
+      - ./services/hotel-service/hotels.env
     networks:
       - postgres_net
   
   loyalty:
-    build: "services/loyalty-service"
-    container_name: ${LOYALTY_SERVICE_HOST}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "balances_db"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+    image: celestiv/loyalty_service:1.2
+    env_file:
+      - ./services/loyalty-service/loyalty.env
     networks:
       - postgres_net
-
+  
   payment:
-    build: "services/payment-service"
-    container_name: ${PAYMENT_SERVICE_HOST}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "payments_db"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+    image: celestiv/payment_service:1.2
+    env_file:
+      - ./services/payment-service/payment.env
     networks:
       - postgres_net
-
+  
   report:
-    build: "services/report-service"
-    container_name: ${REPORT_SERVICE_HOST}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "statistics_db"
-      RABBIT_MQ_HOST: ${RABBIT_MQ_HOST}
-      RABBIT_MQ_PORT: ${RABBIT_MQ_PORT}
-      RABBIT_MQ_USER: "guest"
-      RABBIT_MQ_PASSWORD: "guest"
-      RABBIT_MQ_QUEUE_NAME: "messagequeue"
-      RABBIT_MQ_EXCHANGE: "messagequeue-exchange"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+    image: celestiv/report_service:1.2
+    env_file:
+      - ./services/report-service/report.env
     networks:
       - postgres_net
-
+  
   session:
-    build: "services/session-service"
-    container_name: ${SESSION_SERVICE_HOST}
-    ports:
-      - "${SESSION_SERVICE_PORT}:${SESSION_SERVICE_PORT}"
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: "users_db"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+    image: celestiv/session_service:1.2
+    env_file:
+      - ./services/session-service/session.env
     networks:
       - postgres_net
 
+  nginx:
+    deploy:
+      placement:
+          constraints:
+              - "node.role==manager"
+    # restart: always
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8081:8081"
+      - "8087:8087"
+    networks:
+      - postgres_net
 
 volumes:
-  devops7-data:
+  devops7-data: null
 
 networks:
   postgres_net:
-    driver: bridge
+    driver: overlay
